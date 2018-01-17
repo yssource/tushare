@@ -399,10 +399,11 @@ def get_em_gdzjc(type=True, start=None, end=None):
         if pageNum > totalPage:
             break
     df_tmp = pd.DataFrame(dataList, columns=['tmp_col'])
-    return pd.DataFrame(df_tmp.tmp_col.str.split(splitSymbol).tolist(), columns=columns)
+    # import pudb; pudb.set_trace()
+    return pd.DataFrame(df_tmp.tmp_col.str.split(splitSymbol).tolist(), columns=columns).replace(r'', np.nan, regex=True)
         # columns = ['SHCode', 'CompanyCode', 'SCode', 'Close', 'ChangePercent', 'SName', 'ShareHdName', 'FX', 'ChangeNum', 'BDSLZLTB', 'BDZGBBL', 'JYFS', 'BDHCGZS', 'BDHCGBL', 'BDHCYLTGSL', 'BDHCYLTSLZLTGB', 'BDKS', 'BDJZ', 'NOTICEDATE']
 
-def get_em_xuangu(*args):
+def get_em_xuangu(q, p=0):
     """
         获取东方财富网数据中心选股公式
     http://xuanguapi.eastmoney.com/Stock/JS.aspx?type=xgq&sty=xgq&token=eastmoney&c=[gfzs7(BK0685)]&p=1&jn=PBSauVYc&ps=40&s=gfzs7(BK0685)&st=1&r=1495854196624
@@ -428,7 +429,7 @@ def get_em_xuangu(*args):
     pageCount = 5
     splitSymbol = ','
     while 1:
-        url = 'http://xuanguapi.eastmoney.com/Stock/JS.aspx?{}'.format(args[0])
+        url = 'http://xuanguapi.eastmoney.com/Stock/JS.aspx?{}'.format(q)
         url = re.sub(r'&p=\d*&', '&p={}&'.format(pageNum), url)
         try:
             # data = urlopen(Request(url), timeout=30).read().decode('gbk')
@@ -444,8 +445,12 @@ def get_em_xuangu(*args):
         if pageNum == 1:
             pageCount = int(jdata['PageCount'])
             columns = [ 'C_{}'.format(jdata['Results'][0].split(splitSymbol).index(c)) for c in jdata['Results'][0].split(splitSymbol) if jdata['Results'][0] ]
+        if p <= pageCount and p == pageNum:
+            break
         pageNum += 1
         if pageNum > pageCount:
             break
     df_tmp = pd.DataFrame(dataList, columns=['tmp_col'])
-    return pd.DataFrame(df_tmp.tmp_col.str.split(splitSymbol).tolist(), columns=columns)
+    return pd.DataFrame(df_tmp.tmp_col.split(splitSymbol).tolist(),\
+                        columns=columns).rename(columns ={'C_1': 'code', 'C_2': 'name'}).\
+                        replace(r'', np.nan, regex=True)

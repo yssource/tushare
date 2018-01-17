@@ -41,7 +41,8 @@ class Test(unittest.TestCase):
         args = 'type=xgq&sty=xgq&token=eastmoney&c=[gfzs7(BK0701)]&p=1&jn=miupWSAg&ps=40&s=gfzs7(BK0701)&st=1&r=1495873611908'
         # args = 'type=xgq&sty=xgq&token=eastmoney&c=[gfzs7(BK0505)]&p=1&jn=PyAUJluU&ps=40&s=gfzs7(BK0505)&st=1&r=1495874071329'
         # args = 'type=xgq&sty=xgq&token=eastmoney&c=[gz01(1|0)]&p=70&jn=ppTbgXzs&ps=40&s=gz01(1|0)&st=-1&r=1495874145609'
-        print(fd.get_em_xuangu(args))
+        p = 1
+        print(fd.get_em_xuangu(args, p))
 
 if __name__ == "__main__":
     unittest.main()
