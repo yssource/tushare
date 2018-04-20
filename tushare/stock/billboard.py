@@ -381,7 +381,6 @@ def get_em_gdzjc(type=True, start=None, end=None):
     splitSymbol = ''
     while 1:
         url = 'http://datainterface3.eastmoney.com/EM_DataCenter_V3/api/GDZC/GetGDZC?tkn=eastmoney&cfg=gdzc&secucode=&fx={}&sharehdname=&pageSize={}&pageNum={}&sortFields=BDJZ&sortDirec=1&startDate={}&endDate={}'.format(fx, pageSize, pageNum, startDate, endDate)
-        # data = urlopen(Request(url), timeout=30).read().decode('gbk')
         try:
             # data = urlopen(Request(url), timeout=30).read().decode('gbk')
             data = urlopen(Request(url), timeout=30).read()
@@ -393,17 +392,80 @@ def get_em_gdzjc(type=True, start=None, end=None):
         if pageNum == 1:
             splitSymbol = jdata['Data'][0]['SplitSymbol']
             totalPage = jdata['Data'][0]['TotalPage']
-            # columns = "'{}'".format("', '".join(jdata.Data[0].FieldName.split(',')))
             columns = jdata['Data'][0]['FieldName'].split(',')
         pageNum += 1
         if pageNum > totalPage:
             break
     df_tmp = pd.DataFrame(dataList, columns=['tmp_col'])
-    # import pudb; pudb.set_trace()
-    return pd.DataFrame(df_tmp.tmp_col.str.split(splitSymbol).tolist(), columns=columns).replace(r'', np.nan, regex=True)
-        # columns = ['SHCode', 'CompanyCode', 'SCode', 'Close', 'ChangePercent', 'SName', 'ShareHdName', 'FX', 'ChangeNum', 'BDSLZLTB', 'BDZGBBL', 'JYFS', 'BDHCGZS', 'BDHCGBL', 'BDHCYLTGSL', 'BDHCYLTSLZLTGB', 'BDKS', 'BDJZ', 'NOTICEDATE']
+    # columns = ['SHCode', 'CompanyCode', 'SCode', 'Close', 'ChangePercent', 'SName', 'ShareHdName', 'FX', 'ChangeNum', 'BDSLZLTB', 'BDZGBBL', 'JYFS', 'BDHCGZS', 'BDHCGBL', 'BDHCYLTGSL', 'BDHCYLTSLZLTGB', 'BDKS', 'BDJZ', 'NOTICEDATE']
+    df = pd.DataFrame(df_tmp.tmp_col.str.split(splitSymbol).tolist(), columns=columns)
+    df = df.fillna(0)
+    # df = df.replace(r'', np.nan, regex=True)
+    df = df.replace('', 0)
+    df['Close'] = df['Close'].astype(float)
+    df['ChangePercent'] = df['ChangePercent'].astype(float)
+    df['ChangeNum'] = df['ChangeNum'].astype(float)
+    df['BDSLZLTB'] = df['BDSLZLTB'].astype(float)
+    df['BDZGBBL'] = df['BDZGBBL'].astype(float)
+    df['BDHCGZS'] = df['BDHCGZS'].astype(float)
+    df['BDHCGBL'] = df['BDHCGBL'].astype(float)
+    df['BDHCYLTGSL'] = df['BDHCYLTGSL'].astype(float)
+    df['BDHCYLTSLZLTGB'] = df['BDHCYLTSLZLTGB'].astype(float)
+    return df
 
 def get_em_xuangu(q, p=0):
+    """
+        获取东方财富网数据中心选股公式
+    http://xuanguapi.eastmoney.com/Stock/JS.aspx?type=xgq&sty=xgq&token=eastmoney&c=[gfzs7(BK0685)]&p=1&jn=PBSauVYc&ps=40&s=gfzs7(BK0685)&st=1&r=1495854196624
+    Parameters
+    --------
+    type:xgq
+    sty:xgq
+    token:eastmoney
+    c:[gfzs7(BK0685)]
+    p:1
+    jn:PBSauVYc
+    ps:40
+    s:gfzs7(BK0685)
+    st:1
+    r:1495854196624
+       说明：由于是从网站获取的数据，需要一页页抓取，速度取决于您当前网络速度
+    Return
+    --------
+    Data: []
+    """
+    dataList = []
+    pageNum = 1
+    pageCount = 5
+    splitSymbol = ','
+    while 1:
+        url = 'http://xuanguapi.eastmoney.com/Stock/JS.aspx?{}'.format(q)
+        url = re.sub(r'&p=\d*&', '&p={}&'.format(pageNum), url)
+        try:
+            # data = urlopen(Request(url), timeout=30).read().decode('gbk')
+            data = urlopen(Request(url), timeout=30).read()
+        except Exception as e:
+            print('!!!Warning!!! {}'.format(str(e)))
+            break
+
+        matched = re.match(b"[^{]*(.*)", data)
+        if matched:
+            jdata = demjson.decode(matched.group(1))
+        dataList += jdata['Results']
+        if pageNum == 1:
+            pageCount = int(jdata['PageCount'])
+            columns = [ 'C_{}'.format(jdata['Results'][0].split(splitSymbol).index(c)) for c in jdata['Results'][0].split(splitSymbol) if jdata['Results'][0] ]
+        if p <= pageCount and p == pageNum:
+            break
+        pageNum += 1
+        if pageNum > pageCount:
+            break
+    df_tmp = pd.DataFrame(dataList, columns=['tmp_col'])
+    return pd.DataFrame(df_tmp.tmp_col.split(splitSymbol).tolist(),\
+                        columns=columns).rename(columns ={'C_1': 'code', 'C_2': 'name'}).\
+                        replace(r'', np.nan, regex=True)
+
+def get_em_report(q, p=0):
     """
         获取东方财富网数据中心选股公式
     http://xuanguapi.eastmoney.com/Stock/JS.aspx?type=xgq&sty=xgq&token=eastmoney&c=[gfzs7(BK0685)]&p=1&jn=PBSauVYc&ps=40&s=gfzs7(BK0685)&st=1&r=1495854196624
