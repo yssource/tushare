@@ -461,7 +461,7 @@ def get_em_xuangu(q, p=0):
         if pageNum > pageCount:
             break
     df_tmp = pd.DataFrame(dataList, columns=['tmp_col'])
-    return pd.DataFrame(df_tmp.tmp_col.split(splitSymbol).tolist(),\
+    return pd.DataFrame(df_tmp.tmp_col.str.split(splitSymbol).tolist(),\
                         columns=columns).rename(columns ={'C_1': 'code', 'C_2': 'name'}).\
                         replace(r'', np.nan, regex=True)
 
